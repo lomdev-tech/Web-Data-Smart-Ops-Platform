@@ -3,7 +3,6 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 import pandas as pd
 from station_data_analysis.DataManager import DataManager
-from neuralprophet import NeuralProphet as Prophet
 # 全局成员
 PROVINCES_DIC = {
     "台湾省": "台湾",
@@ -228,63 +227,39 @@ def count_age_group(request):
 
 
 def prophet(request):
-    # 局部导入 NeuralProphet，避免 Django 启动时因依赖问题导致服务崩溃
-    try:
-        from neuralprophet import NeuralProphet as Prophet
-    except ImportError:
-        return JsonResponse({'error': 'NeuralProphet 未安装，请运行: pip install neuralprophet'}, status=500)
-
-    # PyTorch 2.6+ 兼容性补丁：修复 weights_only 参数导致的加载失败
-    import torch
-    original_load = torch.load
-    def patched_load(*args, **kwargs):
-        kwargs.setdefault('weights_only', False)
-        return original_load(*args, **kwargs)
-    torch.load = patched_load
-
+    """使用移动平均进行简单预测"""
     dataset_new = origin_data.copy()
     dataset_new["access"] = dataset_new["access"].str[:19]
     result = dataset_new.groupby('access').size()
+
     ds = []
     y = []
     for minute, value in result.items():
         ds.append(minute)
         y.append(value)
 
-    data_train = {'ds': ds, 'y': y}
-    df_train = pd.DataFrame(data_train)
-    df_train['ds'] = pd.to_datetime(df_train['ds'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-    df_train = df_train.dropna(subset=['ds'])
-
-    if len(df_train) < 2:
+    if len(y) < 10:
         return JsonResponse(data={'error': '数据量不足'}, status=400)
 
-    # 创建模型实例 (NeuralProphet 不支持 fbprophet 的季节性参数，直接实例化即可)
-    model = Prophet()
+    # 使用移动平均进行预测
+    window_size = min(20, len(y) // 3)  # 窗口大小
+    ma = pd.Series(y).rolling(window=window_size, min_periods=1).mean()
 
-    model.fit(df_train)
+    # 预测未来60个时间点（基于最后的移动平均值和趋势）
+    last_ma = ma.iloc[-1]
+    trend = (ma.iloc[-1] - ma.iloc[-min(10, len(ma))]) / min(10, len(ma))  # 计算趋势
 
-    future = model.make_future_dataframe(df_train, periods=60)
-    forecast = model.predict(future)
+    predictions = []
+    for i in range(60):
+        pred = last_ma + trend * (i + 1)
+        predictions.append(max(0, int(round(pred))))
 
-    # 确定预测值列名 (优先适配 NeuralProphet 的 yhat1 列)
-    if 'yhat1' in forecast.columns:
-        pred_col = 'yhat1'
-    elif 'yhat' in forecast.columns:
-        pred_col = 'yhat'
-    else:
-        pred_col = 'y'
-
-    if pred_col not in forecast.columns:
-        return JsonResponse(data={'error': '预测结果无效'}, status=500)
-
-    forecast[pred_col] = pd.to_numeric(forecast[pred_col], errors='coerce').fillna(0)
-    forecast['ds'] = forecast['ds'].dt.strftime('%H:%M:%S')
-    forecast_60min = forecast.tail(60).copy()
-    forecast_60min['pred_int'] = forecast_60min[pred_col].round().astype(int)
+    # 生成时间标签
+    last_time = pd.to_datetime(ds[-1])
+    future_times = [(last_time + pd.Timedelta(seconds=i+1)).strftime('%H:%M:%S') for i in range(60)]
 
     res = {
-        'xAxis': forecast_60min['ds'].tolist(),
-        'yAxis': forecast_60min['pred_int'].tolist()
+        'xAxis': future_times,
+        'yAxis': predictions
     }
     return JsonResponse(res, safe=False)
