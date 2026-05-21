@@ -1,7 +1,8 @@
 {
+  "buildCommand": "bash build.sh",
   "builds": [
     {
-      "src": "Djangodemo/wsgi.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     }
   ],
@@ -12,7 +13,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "Djangodemo/wsgi.py"
+      "dest": "api/index.py"
     }
   ]
 }

@@ -12,5 +12,5 @@ from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
 
 # Vercel需要的handler
-def handler(request, response):
+def handler(request):
     return application(request)
