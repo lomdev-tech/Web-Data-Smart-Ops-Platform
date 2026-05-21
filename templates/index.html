@@ -1,14 +1,15 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据可视化大屏</title>
-    <script src="../static/js/echarts.min.js"></script>
-    <script src="../static/js/echarts-gl.js"></script>
-    <link rel="stylesheet" href="../static/css/style.css">
-    <script src="../static/js/china.js"></script>
-    <script src="../static/js/axios.min.js"></script>
+    <script src="{% static 'js/echarts.min.js' %}"></script>
+    <script src="{% static 'js/echarts-gl.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="{% static 'js/china.js' %}"></script>
+    <script src="{% static 'js/axios.min.js' %}"></script>
 </head>
 <body>
     <div class="dashboard">
