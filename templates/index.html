@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据可视化大屏</title>
+    <script src="../static/js/echarts.min.js"></script>
+    <script src="../static/js/echarts-gl.js"></script>
+    <link rel="stylesheet" href="../static/css/style.css">
+    <script src="../static/js/china.js"></script>
+    <script src="../static/js/axios.min.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="decorative-lines"></div>
+<!--        <div class="corner-decor tl"></div>-->
+<!--        <div class="corner-decor tr"></div>-->
+<!--        <div class="corner-decor bl"></div>-->
+<!--        <div class="corner-decor br"></div>-->
+        <div class="header">
+            <h1>网站运营数链智维平台</h1>
+            <div class="time" id="current-time"></div>
+        </div>
+
+        <div class="chart-container map-container">
+            <div class="chart-title">全国数据分布地图</div>
+            <div class="chart" id="map-chart"></div>
+        </div>
+
+        <div class="chart-container bar-container">
+            <div class="chart-title">热门城市访问量Top10</div>
+            <div class="chart" id="bar-chart"></div>
+        </div>
+
+        <div class="chart-container line1-container">
+            <div class="chart-title">访问量趋势图</div>
+            <div class="chart" id="line1-chart"></div>
+        </div>
+
+        <div class="chart-container pie-container">
+            <div class="chart-title">性别占比分析</div>
+            <div class="chart" id="pie-chart"></div>
+        </div>
+
+        <div class="chart-container rose-container">
+            <div class="chart-title">手机类型分析</div>
+            <div class="chart" id="rose-chart"></div>
+        </div>
+
+        <div class="chart-container h-bar-container">
+            <div class="chart-title">网站访问状态码分析</div>
+            <div class="chart" id="h-bar-chart"></div>
+        </div>
+
+        <div class="chart-container scatter-container">
+            <div class="chart-title">数据关联分析</div>
+            <div class="chart" id="scatter-chart"></div>
+        </div>
+
+        <div class="chart-container line2-container">
+            <div class="chart-title">未来一小时网站访问量预测</div>
+            <div class="chart" id="line2-chart"></div>
+        </div>
+
+        <div class="chart-container age-container">
+            <div class="chart-title">年龄段分布分析图</div>
+            <div class="chart" id="age-chart"></div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化所有图表
+        document.addEventListener('DOMContentLoaded', function() {
+            // 更新时间
+            function updateTime() {
+                const now = new Date();
+                const timeStr = now.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+                document.getElementById('current-time').textContent = timeStr;
+            }
+
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // 科技感主题配置
+            const techTheme = {
+                color: ['#00f2fe', '#4facfe', '#a6c1ee', '#84fab0', '#81f1f7', '#a6c1ee', '#fcc169'],
+                backgroundColor: 'transparent',
+                textStyle: {
+                    color: '#fff'
+                },
+                legend: {
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    }
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            };
+            // 注册主题
+            echarts.registerTheme('tech', techTheme);
+            const mapChart = echarts.init(document.getElementById('map-chart'));
+            axios.get('province/').then(response => {
+                let mapData = response.data.map(item => ({
+                    name: item.province,
+                    value: item.count
+                }));
+                const mapOption = {
+                theme: 'tech',
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}<br/>访问量: {c}'
+                },
+                visualMap: {
+                    min: 0,
+                    max: 15000,
+                    text: ['高', '低'],
+                    realtime: false,
+                    calculable: true,
+                    inRange: {
+                        color: ['#50a3ba', '#eac736', '#d94e5d']
+                    },
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                series: [
+                    {
+                    name: '数据',
+                    type: 'map',
+                    map: 'china',
+                    roam: true,
+                    emphasis: {
+                        label: {
+                            show: true
+                        }
+                    },
+                    data: mapData,
+                    itemStyle: {
+                        areaColor: '#0f1c3c',
+                        borderColor: '#4facfe',
+                        borderWidth: 0.5,
+                        shadowColor: 'rgba(0, 150, 255, 0.5)',
+                        shadowBlur: 10
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            areaColor: '#4facfe'
+                        }
+                    }
+                }]
+            };
+                mapChart.setOption(mapOption);
+                window.addEventListener('resize', function() {
+                    mapChart.resize();
+                });
+                //console.log(mapData)
+            }).catch(error => {
+                //errorElement.textContent = `数据加载失败: ${error.message}`;
+                console.error('获取数据失败:', error);
+            });
+            // 地图选项
+            const barChart = echarts.init(document.getElementById('bar-chart'));
+            // 柱状图数据
+            axios.get('city/').then(response => {
+                //console.log(barData.categories)
+                // 柱状图选项
+                const barOption = {
+                    theme: 'tech',
+                    xAxis: {
+                        type: 'category',
+                        data: response.data.city,
+                        axisLine: {
+                            lineStyle: {
+                                color: '#6E7079'
+                            }
+                        },
+                        axisLabel: {
+                            color: '#fff',
+                            show: true,
+                            interval: 0,
+                            rotate: -60,
+                            inside: false,
+                            margin: 6
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#fff'
+                        }
+                    },
+                    series: [{
+                        data: response.data.count,
+                        type: 'bar',
+                        barWidth: '40%',
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: '#83bff6' },
+                                { offset: 0.5, color: '#188df0' },
+                                { offset: 1, color: '#188df0' }
+                            ]),
+                            borderRadius: [4, 4, 0, 0]
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#ff9a9e' },
+                                    { offset: 0.5, color: '#fad0c4' },
+                                    { offset: 1, color: '#fad0c4' }
+                                ])
+                            }
+                        },
+                    }]
+                };
+                barChart.setOption(barOption);
+                window.addEventListener('resize', function() {
+                    barChart.resize();
+                });
+            }).catch(error => {
+                //errorElement.textContent = `数据加载失败: ${error.message}`;
+                console.error('获取数据失败:', error);
+            });
+            // 折线图1数据
+            const line1Data = {
+                categories: ['1月', '2月', '3月', '4月', '5月', '6月', '7月'],
+                series1: [120, 132, 101, 134, 90, 230, 210],
+                series2: [220, 182, 191, 234, 290, 330, 310]
+            };
+            const line1Chart = echarts.init(document.getElementById('line1-chart'));
+            axios.get('minute/').then(response => {
+                // 折线图1选项
+                const line1Option = {
+                    theme: 'tech',
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: response.data.minute,
+                        axisLabel: {
+                            color: '#fff'
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#fff'
+                        }
+                    },
+                    series: [
+                        {
+                            name: '',
+                            type: 'line',
+                            data: response.data.count,
+                            smooth: true,
+                            lineStyle: {
+                                width: 3,
+                                color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                    { offset: 0, color: '#00f2fe' },
+                                    { offset: 1, color: '#4facfe' }
+                                ])
+                            },
+                            symbolSize: 8,
+                            itemStyle: {
+                                color: '#00f2fe',
+                                borderColor: '#00f2fe'
+                            },
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: 'rgba(0, 242, 254, 0.5)' },
+                                    { offset: 1, color: 'rgba(0, 242, 254, 0.1)' }
+                                ])
+                            }
+                        },
+                    ],
+					dataZoom: [
+                        {
+                            type: 'slider',
+                            xAxisIndex: 0,
+                            filterMode: 'filter'
+                        },
+                        {
+                            type: 'inside',
+                            xAxisIndex: 0,
+                            filterMode: 'filter'
+                        }
+                    ],
+					
+                };
+                line1Chart.setOption(line1Option);
+                window.addEventListener('resize', function() {
+                    line1Chart.resize();
+                });
+            }).catch(error => {
+                //errorElement.textContent = `数据加载失败: ${error.message}`;
+                console.error('获取数据失败:', error);
+            });
+
+            const pieChart = echarts.init(document.getElementById('pie-chart'));
+            axios.get('gender/').then(response => {
+                const pieData = response.data.map(item => ({
+                    name:item.gender,
+                    value: item.count
+                }));
+                // 饼图选项
+                const pieOption = {
+                    theme: 'tech',
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{a} <br/>{b}: {c} ({d}%)'
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        right: 10,
+                        top: 'center',
+                        textStyle: {
+                            color: '#fff'
+                        }
+                    },
+                    series: [
+                        {
+                            name: '数据占比',
+                            type: 'pie',
+                            radius: ['50%', '70%'],
+                            avoidLabelOverlap: false,
+                            itemStyle: {
+                                borderRadius: 10,
+                                borderColor: '#0f1c3c',
+                                borderWidth: 2
+                            },
+                            label: {
+                                show: false,
+                                position: 'center'
+                            },
+                            emphasis: {
+                                label: {
+                                    show: true,
+                                    fontSize: '18',
+                                    fontWeight: 'bold',
+                                    color: '#fff'
+                                }
+                            },
+                            labelLine: {
+                                show: false
+                            },
+                            data: pieData
+                        }
+                    ]
+                };
+                pieChart.setOption(pieOption);
+                window.addEventListener('resize', function() {
+                    pieChart.resize();
+                });
+            }).catch(error => {
+                //errorElement.textContent = `数据加载失败: ${error.message}`;
+                console.error('获取数据失败:', error);
+            });
+            const roseChart = echarts.init(document.getElementById('rose-chart'));
+            axios.get('mobile/').then(response => {
+                const roseData = response.data.map(item => ({
+                    name:item.mobile,
+                    value: item.count
+                }));
+                // 玫瑰图选项
+                const roseOption = {
+                    theme: 'tech',
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{a} <br/>{b}: {c} ({d}%)'
+                    },
+                    legend: {
+                        top: 'bottom',
+                        itemWidth: 10,
+                        itemGap: 5,
+                        textStyle: {
+                            color: '#fff'
+                        }
+                    },
+                    series: [
+                        {
+                            name: '玫瑰图',
+                            type: 'pie',
+                            radius: ['30%', '70%'],
+                            center: ['50%', '50%'],
+                            roseType: 'area',
+                            itemStyle: {
+                                borderRadius: 8,
+                                borderColor: '#0f1c3c',
+                                borderWidth: 2
+                            },
+                            label: {
+                                color: '#fff'
+                            },
+                            emphasis: {
+                                label: {
+                                    show: true
+                                }
+                            },
+                            data: roseData
+                        }
+                    ]
+                };
+                roseChart.setOption(roseOption);
+                window.addEventListener('resize', function() {
+                    roseChart.resize();
+                });
+            }).catch(error => {
+                //errorElement.textContent = `数据加载失败: ${error.message}`;
+                console.error('获取数据失败:', error);
+            });
+			
+            // 横向柱状图
+            const hBarChart = echarts.init(document.getElementById('h-bar-chart'));
+            axios.get('status/').then(response => {
+				
+                //console.log(response.data)
+                // 横向柱状图选项
+                const hBarOption = {
+                    theme: 'tech',
+                    xAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#fff'
+                        }
+                    },
+                    yAxis: {
+                        type: 'category',
+                        data: response.data.code,
+                        axisLabel: {
+                            show:true,
+                            color: '#fff'
+                        }
+                    },
+                    series: [{
+                        data: response.data.count,
+                        type: 'bar',
+                        barWidth: '60%',
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                { offset: 0, color: '#84fab0' },
+                                { offset: 1, color: '#8fd3f4' }
+                            ]),
+                            borderRadius: [0, 4, 4, 0]
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                    { offset: 0, color: '#ff9a9e' },
+                                    { offset: 1, color: '#fecfef' }
+                                ])
+                            }
+                        },
+                        label: {
+                            show: true,
+                            position: 'right',
+                            color: '#fff'
+                        }
+                    }]
+                };
+                hBarChart.setOption(hBarOption);
+                window.addEventListener('resize', function() {
+                    hBarChart.resize();
+                });
+            }).catch(error => {
+                //errorElement.textContent = `数据加载失败: ${error.message}`;
+                console.error('获取数据失败:', error);
+            });
+
+            const scatterChart = echarts.init(document.getElementById('scatter-chart'));
+            axios.get('minute/').then(response => {
+                const apiData =response.data
+				//console.log(apiData.minute)
+				const scatterData = response.data.minute.map((time, index) => [time, apiData.count[index]]);
+                //console.log(scatterData)
+                const scatterOption = {
+                    theme: 'tech',
+					tooltip: {
+						trigger: 'item', // 悬停触发
+						formatter: params => {
+							// params 是当前悬停的数据项
+							//const date = new Date(params.value[0]);
+							return `
+								时间: ${params.value[0]}<br/>
+								访问量: ${params.value[1]}
+							`;
+						}
+					},
+                    xAxis: {
+                        type: 'category',
+                        name: '时间',
+                        data: apiData.minute,  // 直接使用 minute 数组作为 X 轴标签
+                        axisLabel: {
+                            show: true, // 是否显示刻度标签，默认显示
+                            rotate: -45,
+                            interval: 10,
+                            inside: false,
+                            //margin: 6,
+                            formatter: function(value) {
+                                //const date = new Date(value);
+								//console.log(value)
+                                return value  //echarts.format.formatTime('hh:mm', value);
+                            }
+                        }
+                    },
+                     yAxis: {
+                        type: 'value',
+                        name: '访问量',
+						show: true
+                    },
+                    series: [{
+                        name: '访问量',
+                        type: 'scatter',
+                        symbolSize: function(data) {
+                            // 根据访问量大小调整点的大小
+                            return Math.min(Math.max(data[1] / 50, 5), 20);
+                        },
+                        data: scatterData,
+                        itemStyle: {
+                            color: '#5470C6'
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                color: '#EE6666'
+                            }
+                        }
+                    }],
+                    dataZoom: [
+                        {
+                            type: 'slider',
+                            xAxisIndex: 0,
+                            filterMode: 'filter'
+                        },
+                        {
+                            type: 'inside',
+                            xAxisIndex: 0,
+                            filterMode: 'filter'
+                        }
+                    ],
+                }
+                scatterChart.setOption(scatterOption);
+                window.addEventListener('resize', function() {
+                    scatterChart.resize();
+                });
+            }).catch(error => {
+                //errorElement.textContent = `数据加载失败: ${error.message}`;
+                console.error('获取数据失败:', error);
+            });
+            // 折线图2
+            const line2Chart = echarts.init(document.getElementById('line2-chart'));
+            axios.get('prophet/').then(response => {
+				
+                // 折线图2选项
+                const line2Option = {
+                    theme: 'tech',
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: response.data.xAxis,
+                        axisLabel: {
+                            color: '#fff',
+							show: true,
+							interval: 5, 
+							rotate: -90, 
+							inside: false, 
+							margin: 6, 
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#fff'
+                        }
+                    },
+                    series: [
+                        {
+                            name: '流量',
+                            type: 'line',
+                            data: response.data.yAxis,
+                            smooth: true,
+                            lineStyle: {
+                                width: 3,
+                                color: '#00f2fe'
+                            },
+                            symbolSize: 8,
+                            itemStyle: {
+                                color: '#00f2fe',
+                                borderColor: '#00f2fe'
+                            }
+                        },
+                    ],
+                }
+                line2Chart.setOption(line2Option);
+                window.addEventListener('resize', function() {
+                    line2Chart.resize();
+                });
+            }).catch(error => {
+                //errorElement.textContent = `数据加载失败: ${error.message}`;
+                console.error('获取数据失败:', error);
+            });
+
+            // 年龄段分布分析
+            const ageChart = echarts.init(document.getElementById('age-chart'));
+            axios.get('age_group/').then(response => {
+                const ageData = response.data;
+                const colors = ['#00f2fe', '#4facfe', '#a6c1ee', '#84fab0', '#fcc169', '#ff6b6b', '#c9a0dc'];
+
+                // URL路径中文映射
+                const urlMap = {
+                    '/home': '首页',
+                    '/sight/list': '景点列表',
+                    '/sight/search': '景点搜索',
+                    '/sight/recommend': '景点推荐',
+                    '/hotel/list': '酒店列表',
+                    '/hotel/search': '酒店搜索',
+                    '/hotel/recommend': '酒店推荐'
+                };
+
+                const urlKeys = Object.keys(ageData.url_preference);
+                const urlLabels = urlKeys.map(k => urlMap[k] || k);
+
+                const ageOption = {
+                    color: colors,
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' }
+                    },
+                    legend: {
+                        data: ageData.age_groups,
+                        bottom: 0,
+                        textStyle: { color: '#fff', fontSize: 11 },
+                        itemWidth: 12,
+                        itemHeight: 12
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        top: '5%',
+                        bottom: '15%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: urlLabels,
+                        axisLabel: { color: '#fff', rotate: 15, fontSize: 11 }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: { color: '#fff' }
+                    },
+                    series: ageData.age_groups.map((group, i) => ({
+                        name: group,
+                        type: 'bar',
+                        barGap: '10%',
+                        data: urlKeys.map(k => ageData.url_preference[k][i]),
+                        itemStyle: {
+                            borderRadius: [3, 3, 0, 0]
+                        }
+                    }))
+                };
+
+                ageChart.setOption(ageOption);
+                window.addEventListener('resize', function() {
+                    ageChart.resize();
+                });
+            }).catch(error => {
+                console.error('获取年龄段数据失败:', error);
+            });
+        });
+    </script>
+</body>
+</html>
