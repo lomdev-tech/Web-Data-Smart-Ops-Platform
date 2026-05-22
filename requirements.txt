@@ -1,5 +1,0 @@
-django>=6.0,<7.0
-pandas>=2.0
-numpy>=1.24
-gunicorn>=21.0
-whitenoise>=6.0
