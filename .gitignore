@@ -55,3 +55,4 @@ htmlcov/
 lightning_logs/
 *.pt
 *.pth
+*.ckpt

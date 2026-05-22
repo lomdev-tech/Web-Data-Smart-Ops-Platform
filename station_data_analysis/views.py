@@ -88,7 +88,6 @@ def visited_minute_count(request):
     for k, v in use_data.items():
         result['minute'].append(k)
         result['count'].append(v)
-    print(result)
     return JsonResponse(result,safe=False)
 def count_province(request):
     results = [

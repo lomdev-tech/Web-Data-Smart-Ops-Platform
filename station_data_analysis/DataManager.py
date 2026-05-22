@@ -1,5 +1,9 @@
 import pandas as pd
 import  numpy as np
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_FILE = BASE_DIR / 'data' / 'nginx_2025.csv'
 
 class DataManager:
     _instance = None
@@ -16,7 +20,7 @@ class DataManager:
     @classmethod
     def load_data(cls):
         try:
-            cls._dataset = pd.read_csv('data/nginx_2025.csv')
+            cls._dataset = pd.read_csv(DATA_FILE)
             pd.set_option('display.max_columns', None)
             column_name = ['ip', 'province', 'city', 'access', 'mobile',
                            'browser', 'gender', 'age', 'method', 'url',
@@ -33,6 +37,7 @@ class DataManager:
             # print(cls._dataset.head())
         except FileNotFoundError as e:
             print(f"错误:未找到文件{e.filename}")
+            raise
         except Exception as e:
             print("数据加载失败:", str(e))
             raise
