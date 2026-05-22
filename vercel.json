@@ -1,10 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "python manage.py collectstatic --noinput",
-  "functions": {
-    "wsgi.py": {
-      "maxDuration": 30,
-      "excludeFiles": "{.git/**,.idea/**,.venv/**,venv/**,ENV/**,env/**,lightning_logs/**,**/__pycache__/**,**/*.pyc,**/*.ckpt,db.sqlite3}"
-    }
-  }
+  "buildCommand": "python manage.py collectstatic --noinput"
 }
