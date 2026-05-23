@@ -43,6 +43,9 @@ desktop.ini
 # Vercel
 .vercel/
 
+# Edge One Pages build output
+output/
+
 # Node (if using npm for tools)
 node_modules/
 
